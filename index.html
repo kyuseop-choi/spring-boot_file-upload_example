@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title>crud test</title>
+ 
+</head>
+<body>
+<div id="app">
+    <label for="title">제목</label>
+    <input type="text" id="title" ref="title"/><br>
+    <input type="file" id="picture" ref="picture" accept="image/png, image/jpeg"/><br>
+    <label for="password">비밀번호</label>
+    <input type="password" id="password" ref="password"/><br>
+    <button v-on:click="post"> Post! </button>
+    <hr>
+    <div
+        v-for="list in lists"
+        v-bind:id="list.uid"
+        >
+        {{list.uid}}
+        <img v-bind:src="'http://localhost:8080/content/image/'+list.path" width="20%"/>
+        <input type="text" v-model="list.title" ref="tt" /> <br>
+        <input type="file" v-bind:ref=list.uid accept="image/png, image/jpeg"/> <br>
+        <button v-on:click="update(list)" >update</button>
+        <button v-on:click="del(list)" >delete</button>
+        <br>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/4.0.1/mustache.min.js"></script>
+<script type="text/javascript">
+    new Vue({
+        el: '#app',
+        data: {
+            file:null
+            , lists: []
+            , path: ''
+            , status: ''
+        },
+        methods: {
+            post: function() {
+                var formData = new FormData();
+                formData.append("picture", this.$refs.picture.files[0]);
+                formData.append("title", this.$refs.title.value);
+                formData.append("password", this.$refs.password.value);
+                axios.post(
+                    'http://localhost:8080/content'
+                    , formData
+                    , { headers: {'Content-Type': 'multipart/form-data'}}
+                ).then(response=> {
+                    console.log("post");
+                    console.log(response.data);
+                    this.getList();
+                }).catch(err=> {
+                    console.log(err);
+                });
+            }
+            , update: function (list) {
+                var upPasswd = prompt("업데이트를 위해 비밀번호를 입력해주세요.");
+                if(!upPasswd) return;
+                var formData = new FormData();
+                formData.append("picture", this.$refs[list.uid][0].files[0]);
+                formData.append("title", list.title);
+                formData.append("password", upPasswd);
+                axios.put(
+                  'http://localhost:8080/content/'+list.uid
+                    , formData
+                    , { headers: { 'Content-Type': 'multipart/form-data'}}
+                ).then(response => {
+                    console.log("update");
+                    console.log(response.data);
+                    this.getList();
+                }).catch(err => {
+                    console.log(err);
+                });
+            }
+            ,
+            del: function(list) {
+                var delPasswd = prompt("삭제를 위해 비밀번호를 눌러주세요");
+                if(!delPasswd) return;
+                axios.delete('http://localhost:8080/content/'+list.uid
+                , {data: {password: delPasswd}}
+                ).then(response =>
+                    this.getList()
+                ).catch(err =>{
+                    console.log(err);
+                }
+                );
+            }
+            ,
+            getList: function() {
+                axios.get('http://localhost:8080/content').then(response => {
+                    this.lists = response.data
+                    response.data.forEach(element => {
+                        console.log({...element});
+                    });
+                }).catch(err=>{
+                    console.log(err);
+                }
+                );
+            }
+        }
+        ,
+        mounted: function () {
+            this.$nextTick(function () {
+                this.getList();
+            })
+        }
+    })
+</script>
+</body>
+
+</html>
